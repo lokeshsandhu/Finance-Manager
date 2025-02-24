@@ -2,59 +2,100 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Setup Bank and Accounts</title>
+  <title>Setup Banks and Accounts</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    .bank-block { border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; }
+  </style>
 </head>
 <body class="bg-light">
   <div class="container mt-5">
-    <h2 class="text-center mb-4">Setup Bank and Accounts</h2>
-    <div class="card p-4 shadow-sm">
-      <form id="setup-form">
-        <div class="mb-3">
-          <label class="form-label">Bank Name</label>
-          <input type="text" class="form-control" name="bank" placeholder="Enter bank name" required>
-        </div>
-        <h4>Accounts</h4>
-        <div id="accounts-container">
-          <!-- One account row by default -->
-          <div class="row mb-3 account-row">
-            <div class="col-md-6">
-              <label class="form-label">Account Name</label>
-              <input type="text" class="form-control" name="account_name[]" placeholder="Account name" required>
+    <!-- Navigation: Button to return to Main Site -->
+    <div class="mb-3">
+      <a href="/" class="btn btn-link">&larr; Go to Main Site</a>
+    </div>
+    <h2 class="text-center mb-4">Setup Banks and Accounts</h2>
+    <form id="setup-form">
+      <div id="banks-container">
+        <div class="bank-block">
+          <div class="mb-3">
+            <label class="form-label">Bank Name</label>
+            <input type="text" class="form-control" name="bank[]" placeholder="Enter bank name" required>
+          </div>
+          <div class="accounts-container">
+            <h5>Accounts</h5>
+            <div class="row mb-3 account-row">
+              <div class="col-md-6">
+                <label class="form-label">Account Name</label>
+                <input type="text" class="form-control" name="account_name_0[]" placeholder="Account name" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Balance</label>
+                <input type="number" class="form-control" name="account_balance_0[]" placeholder="Balance" required>
+              </div>
             </div>
-            <div class="col-md-6">
-              <label class="form-label">Balance</label>
-              <input type="number" class="form-control" name="account_balance[]" placeholder="Balance" required>
-            </div>
+            <button type="button" class="btn btn-secondary btn-sm add-account">Add Account</button>
           </div>
         </div>
-        <button type="button" id="add-account" class="btn btn-secondary mb-3">Add Another Account</button>
-        <button type="submit" class="btn btn-primary w-100">Save Preferences</button>
-      </form>
-      <div id="setup-message" class="mt-3 text-success" style="display: none;"></div>
-    </div>
+      </div>
+      <button type="button" id="add-bank" class="btn btn-secondary mb-3">Add Another Bank</button>
+      <button type="submit" class="btn btn-primary w-100">Save Preferences</button>
+    </form>
+    <div id="setup-message" class="mt-3 text-success" style="display: none;"></div>
   </div>
 
   <script>
     $(document).ready(function(){
-      // Add a new account row when the button is clicked.
-      $("#add-account").click(function(){
+      var bankIndex = 1; // starting index for additional bank blocks
+      // Add Another Bank
+      $("#add-bank").click(function(){
+        var bankBlock = `
+          <div class="bank-block">
+            <div class="mb-3">
+              <label class="form-label">Bank Name</label>
+              <input type="text" class="form-control" name="bank[]" placeholder="Enter bank name" required>
+            </div>
+            <div class="accounts-container">
+              <h5>Accounts</h5>
+              <div class="row mb-3 account-row">
+                <div class="col-md-6">
+                  <label class="form-label">Account Name</label>
+                  <input type="text" class="form-control" name="account_name_${bankIndex}[]" placeholder="Account name" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Balance</label>
+                  <input type="number" class="form-control" name="account_balance_${bankIndex}[]" placeholder="Balance" required>
+                </div>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm add-account">Add Account</button>
+            </div>
+          </div>`;
+        $("#banks-container").append(bankBlock);
+        bankIndex++;
+      });
+
+      // Delegate event for adding additional account rows within a bank block
+      $(document).on("click", ".add-account", function(){
+        var accountsContainer = $(this).closest(".accounts-container");
+        var firstInputName = accountsContainer.find("input[name^='account_name_']").first().attr("name");
+        var indexMatch = firstInputName.match(/account_name_(\d+)\[\]/);
+        var currentIndex = indexMatch ? indexMatch[1] : "0";
         var accountRow = `
           <div class="row mb-3 account-row">
             <div class="col-md-6">
               <label class="form-label">Account Name</label>
-              <input type="text" class="form-control" name="account_name[]" placeholder="Account name" required>
+              <input type="text" class="form-control" name="account_name_${currentIndex}[]" placeholder="Account name" required>
             </div>
             <div class="col-md-6">
               <label class="form-label">Balance</label>
-              <input type="number" class="form-control" name="account_balance[]" placeholder="Balance" required>
+              <input type="number" class="form-control" name="account_balance_${currentIndex}[]" placeholder="Balance" required>
             </div>
           </div>`;
-        $("#accounts-container").append(accountRow);
+        accountsContainer.append(accountRow);
       });
 
-      // Submit the setup form using AJAX.
+      // Submit the Setup form via AJAX
       $("#setup-form").on("submit", function(e){
         e.preventDefault();
         $.post("/setup", $(this).serialize(), function(response){
