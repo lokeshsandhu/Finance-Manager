@@ -78,31 +78,13 @@
     </div>
     
     <script>
-        $(document).ready(function() {
-            $("#transaction-form").submit(function(event) {
-                event.preventDefault(); 
-                
-                $.ajax({
-                    type: "POST",
-                    url: "/add_transaction",
-                    data: $(this).serialize(),
-                    success: function(response) {
-                        $("#response-message").text("Transaction Added Successfully!").show().delay(3000).fadeOut();
-                        $("#transaction-form")[0].reset(); 
-                        fetchTransactions();
-                    },
-                    error: function() {
-                        $("#response-message").text("Error adding transaction. Try again.").addClass("text-danger").show().delay(3000).fadeOut();
-                    }
-                });
-            });
-            
+        $(document).ready(function () {
             function fetchTransactions() {
-                $.get("/view_transactions", function(data) {
+                $.get("/view_transactions", function (data) {
                     let rows = "";
-                    data.transactions.forEach(function(transaction, index) {
+                    data.transactions.forEach(function (transaction) {
                         rows += `<tr>
-                                    <td>${index + 1}</td>
+                                    <td>${transaction.id}</td>
                                     <td>${transaction.date}</td>
                                     <td>${transaction.type}</td>
                                     <td>${transaction.bank}</td>
@@ -111,8 +93,8 @@
                                     <td>${transaction.purpose}</td>
                                     <td>${transaction.place}</td>
                                     <td>
-                                        <button class='btn btn-warning btn-sm edit-transaction' data-id='${index + 1}'>Edit</button>
-                                        <button class='btn btn-danger btn-sm delete-transaction' data-id='${index + 1}'>Delete</button>
+                                        <button class='btn btn-warning btn-sm edit-transaction' data-id='${transaction.id}'>Edit</button>
+                                        <button class='btn btn-danger btn-sm delete-transaction' data-id='${transaction.id}'>Delete</button>
                                     </td>
                                 </tr>`;
                     });
@@ -121,6 +103,29 @@
             }
 
             $("#fetch-transactions").click(fetchTransactions);
+
+            $(document).on("click", ".delete-transaction", function () {
+                let transactionId = $(this).data("id");
+                $.post("/delete_transaction", { id: transactionId }, function (response) {
+                    alert(response.message);
+                    fetchTransactions();
+                }).fail(function () {
+                    alert("Error deleting transaction.");
+                });
+            });
+
+            $(document).on("click", ".edit-transaction", function () {
+                let transactionId = $(this).data("id");
+                let newAmount = prompt("Enter new amount:");
+                if (newAmount !== null) {
+                    $.post("/edit_transaction", { id: transactionId, amount: newAmount }, function (response) {
+                        alert(response.message);
+                        fetchTransactions();
+                    }).fail(function () {
+                        alert("Error editing transaction.");
+                    });
+                }
+            });
         });
     </script>
 </body>
