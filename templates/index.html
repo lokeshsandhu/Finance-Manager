@@ -21,7 +21,7 @@
         <div class="row">
           <div class="col-md-4 mb-3">
             <label>Date</label>
-            <input type="date" class="form-control" name="date" value="{{ default_date }}" required>
+            <input type="date" class="form-control" name="date" id="date-field" required>
           </div>
           <div class="col-md-4 mb-3">
             <label>Time</label>
@@ -37,28 +37,33 @@
             </select>
           </div>
         </div>
-        
-        <div id="bank-account-section">
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label>Bank</label>
-              <select class="form-control" name="bank" id="bank-select">
-                <option value="">Select Bank</option>
-                {% for bank in banks.keys() %}
-                  <option value="{{ bank }}">{{ bank }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-6 mb-3">
-              <label>Account</label>
-              <select class="form-control" name="account" id="account-select">
-                <option value="">Select Account</option>
-              </select>
-            </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label>Bank</label>
+            <select class="form-control" name="bank" id="bank-select">
+              <option value="">Select Bank</option>
+              {% for bank in banks.keys() %}
+                <option value="{{ bank }}">{{ bank }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label>Account</label>
+            <select class="form-control" name="account" id="account-select">
+              <option value="">Select Account</option>
+            </select>
           </div>
         </div>
 
         <div class="row">
+          <div class="col-md-4 mb-3">
+            <label>Transaction Type</label>
+            <select class="form-control" name="transaction_direction" id="transaction-direction">
+              <option value="Outgoing">Outgoing</option>
+              <option value="Incoming">Incoming</option>
+            </select>
+          </div>
           <div class="col-md-4 mb-3">
             <label>Amount</label>
             <input type="number" class="form-control" name="amount" required>
@@ -67,28 +72,65 @@
             <label>Purpose</label>
             <input type="text" class="form-control" name="purpose" required>
           </div>
-          <div class="col-md-4 mb-3">
-            <label>Balance Left</label>
-            <input type="number" class="form-control" name="balance_left" required>
-          </div>
         </div>
 
         <button type="submit" class="btn btn-primary w-100">Add Transaction</button>
       </form>
     </div>
+
+    <div class="card p-4 shadow-sm mt-4">
+      <h4>View Transactions</h4>
+      <button class="btn btn-info w-100 mb-3" id="fetch-transactions">Load Transactions</button>
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Type</th>
+              <th>Bank</th>
+              <th>Account</th>
+              <th>Direction</th>
+              <th>Amount</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody id="transactions-table"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <script>
-    const bankAccounts = {{ banks | tojson }};
-    $("#bank-select").change(function () {
-      const selectedBank = $(this).val();
-      $("#account-select").empty().append("<option value=''>Select Account</option>");
-      if (bankAccounts[selectedBank]) {
-        bankAccounts[selectedBank].forEach(account => {
-          $("#account-select").append(`<option value='${account}'>${account}</option>`);
+    function fetchTransactions() {
+      $.get("/view_transactions", function (data) {
+        let rows = "";
+        data.transactions.forEach(function (transaction) {
+          rows += `<tr>
+                    <td>${transaction.Date}</td>
+                    <td>${transaction.Time}</td>
+                    <td>${transaction.Type}</td>
+                    <td>${transaction.Bank}</td>
+                    <td>${transaction.Account}</td>
+                    <td>${transaction.Direction}</td>
+                    <td>${transaction.Amount}</td>
+                    <td>${transaction.Purpose}</td>
+                  </tr>`;
         });
-      }
+        $("#transactions-table").html(rows);
+      });
+    }
+
+    $("#fetch-transactions").click(fetchTransactions);
+
+    $("#transaction-form").submit(function (e) {
+      e.preventDefault();
+      $.post("/add_transaction", $(this).serialize(), function () {
+        fetchTransactions();
+      });
     });
+
+    $("#date-field").val(new Date().toISOString().slice(0, 10));
   </script>
 </body>
 </html>
