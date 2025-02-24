@@ -1,312 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Finance Manager</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <style>
-        .transaction-row { cursor: pointer; }
-        .transaction-row:hover { background-color: #f8f9fa; }
-        .modal-lg { max-width: 80%; }
-        .edit-controls { display: none; }
-        .transaction-row.editing .edit-controls { display: inline; }
-        .transaction-row.editing .view-controls { display: none; }
-        .amount-positive { color: #198754; }
-        .amount-negative { color: #dc3545; }
-    </style>
+  <meta charset="UTF-8">
+  <title>Finance Manager</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-        <div class="container">
-            <a class="navbar-brand" href="/">Finance Manager</a>
-            <div class="navbar-nav">
-                <a class="nav-link" href="/setup">Setup</a>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container mt-4">
-        <!-- Add Transaction Card -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white">
-                <h5 class="card-title mb-0">Add Transaction</h5>
-            </div>
-            <div class="card-body">
-                <form id="transaction-form">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Date</label>
-                            <input type="date" class="form-control" name="date" id="date-field" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Time</label>
-                            <input type="time" class="form-control" name="time" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Type</label>
-                            <select class="form-control" name="type" id="transaction-type">
-                                <option value="Online">Online</option>
-                                <option value="In-Person">In-Person</option>
-                                <option value="Interac">Interac</option>
-                                <option value="Cash">Cash</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mt-2 bank-account-section">
-                        <div class="col-md-6">
-                            <label class="form-label">Bank</label>
-                            <select class="form-control" name="bank" id="bank-select">
-                                <option value="">Select Bank</option>
-                                {% for bank in banks.keys() %}
-                                    <option value="{{ bank }}">{{ bank }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Account</label>
-                            <select class="form-control" name="account" id="account-select">
-                                <option value="">Select Account</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mt-2 interac-options" style="display: none;">
-                        <div class="col-12">
-                            <label class="form-label">Interac Type</label>
-                            <select class="form-control" name="interac_type" id="interac-type">
-                                <option value="To Someone">To Someone</option>
-                                <option value="Across Accounts">Across Accounts</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 interac-target-account" style="display: none;">
-                            <label class="form-label">Target Bank</label>
-                            <select class="form-control" name="target_bank" id="target-bank-select">
-                                <option value="">Select Bank</option>
-                                {% for bank in banks.keys() %}
-                                    <option value="{{ bank }}">{{ bank }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6 interac-target-account" style="display: none;">
-                            <label class="form-label">Target Account</label>
-                            <select class="form-control" name="target_account" id="target-account-select">
-                                <option value="">Select Account</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mt-2">
-                        <div class="col-md-4">
-                            <label class="form-label">Direction</label>
-                            <select class="form-control" name="transaction_direction" id="transaction-direction">
-                                <option value="Outgoing">Outgoing</option>
-                                <option value="Incoming">Incoming</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Amount</label>
-                            <input type="number" class="form-control" name="amount" step="0.01" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Purpose</label>
-                            <input type="text" class="form-control" name="purpose" required>
-                        </div>
-                    </div>
-
-                    <div class="mt-3">
-                        <button type="submit" class="btn btn-primary w-100">Add Transaction</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- View Transactions Card -->
-        <div class="card shadow-sm">
-            <div class="card-header bg-white">
-                <h5 class="card-title mb-0">View Transactions</h5>
-            </div>
-            <div class="card-body">
-                <!-- Search Filters -->
-                <div class="row g-3 mb-3">
-                    <div class="col-md-3">
-                        <label class="form-label">Date Range</label>
-                        <div class="input-group">
-                            <input type="date" class="form-control" id="search-date-start" value="{{ default_date }}">
-                            <input type="date" class="form-control" id="search-date-end">
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Search</label>
-                        <input type="text" class="form-control" id="search-keyword" placeholder="Search...">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Bank</label>
-                        <select class="form-control" id="search-bank">
-                            <option value="">All Banks</option>
-                            {% for bank in banks.keys() %}
-                                <option value="{{ bank }}">{{ bank }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Account</label>
-                        <select class="form-control" id="search-account">
-                            <option value="">All Accounts</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="row g-3 mb-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Type</label>
-                        <select class="form-control" id="search-type">
-                            <option value="">All Types</option>
-                            <option value="Online">Online</option>
-                            <option value="In-Person">In-Person</option>
-                            <option value="Interac">Interac</option>
-                            <option value="Cash">Cash</option>
-                            <option value="Refund">Refund</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Amount Range</label>
-                        <div class="input-group">
-                            <input type="number" class="form-control" id="search-amount-min" placeholder="Min">
-                            <input type="number" class="form-control" id="search-amount-max" placeholder="Max">
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Direction</label>
-                        <select class="form-control" id="search-direction">
-                            <option value="">All</option>
-                            <option value="Incoming">Incoming</option>
-                            <option value="Outgoing">Outgoing</option>
-                        </select>
-                    </div>
-                </div>
-
-                <button class="btn btn-primary w-100 mb-3" id="search-transactions">Search Transactions</button>
-
-                <!-- Transactions Table -->
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Date</th>
-                                <th>Time</th>
-                                <th>Type</th>
-                                <th>Bank</th>
-                                <th>Account</th>
-                                <th>Direction</th>
-                                <th>Amount</th>
-                                <th>Purpose</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transactions-table"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+  <nav class="navbar navbar-light bg-light mb-3">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Finance Manager</a>
+      <a class="btn btn-outline-primary" href="/setup">Setup</a>
     </div>
-
-    <!-- Transaction Modal -->
-    <div class="modal fade" id="transactionModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Transaction</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="edit-transaction-form">
-                        <input type="hidden" id="edit-row-index" name="row_index">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Date</label>
-                                <input type="date" class="form-control" name="date" id="edit-date" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Time</label>
-                                <input type="time" class="form-control" name="time" id="edit-time" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Type</label>
-                                <select class="form-control" name="type" id="edit-type">
-                                    <option value="Online">Online</option>
-                                    <option value="In-Person">In-Person</option>
-                                    <option value="Interac">Interac</option>
-                                    <option value="Cash">Cash</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="row g-3 mt-2">
-                            <div class="col-md-6">
-                                <label class="form-label">Bank</label>
-                                <select class="form-control" name="bank" id="edit-bank">
-                                    <option value="">Select Bank</option>
-                                    {% for bank in banks.keys() %}
-                                        <option value="{{ bank }}">{{ bank }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Account</label>
-                                <select class="form-control" name="account" id="edit-account">
-                                    <option value="">Select Account</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="row g-3 mt-2">
-                            <div class="col-md-4">
-                                <label class="form-label">Direction</label>
-                                <select class="form-control" name="transaction_direction" id="edit-direction">
-                                    <option value="Outgoing">Outgoing</option>
-                                    <option value="Incoming">Incoming</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Amount</label>
-                                <input type="number" class="form-control" name="amount" id="edit-amount" step="0.01" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Purpose</label>
-                                <input type="text" class="form-control" name="purpose" id="edit-purpose" required>
-                            </div>
-                        </div>
-                    </form>
-
-                    <form id="refund-form" class="mt-4" style="display: none;">
-                        <h6>Process Refund</h6>
-                        <div class="row g-3">
-                            <div class="col-md-8">
-                                <label class="form-label">Refund Amount</label>
-                                <input type="number" class="form-control" name="refund_amount" step="0.01" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">&nbsp;</label>
-                                <button type="submit" class="btn btn-warning w-100">Process Refund</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-danger" id="delete-transaction">Delete</button>
-                    <button type="button" class="btn btn-warning" id="toggle-refund">Refund</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="save-changes">Save Changes</button>
-                </div>
-            </div>
+  </nav>
+  <div class="container mt-3">
+    <div class="card p-4 shadow-sm">
+      <h4>Add Transaction</h4>
+      <form id="transaction-form">
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label>Date</label>
+            <input type="date" class="form-control" name="date" id="date-field" required>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label>Time</label>
+            <input type="time" class="form-control" name="time" required>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label>Type</label>
+            <select class="form-control" name="type" id="transaction-type">
+              <option value="Online">Online</option>
+              <option value="In-Person">In-Person</option>
+              <option value="Interac">Interac</option>
+              <option value="Cash">Cash</option>
+            </select>
+          </div>
         </div>
+        <div class="row" id="bank-account-section">
+          <div class="col-md-6 mb-3">
+            <label>Bank</label>
+            <select class="form-control" name="bank" id="bank-select">
+              <option value="">Select Bank</option>
+              {% for bank in banks.keys() %}
+                <option value="{{ bank }}">{{ bank }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label>Account</label>
+            <select class="form-control" name="account" id="account-select">
+              <option value="">Select Account</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label>Transaction Direction</label>
+            <select class="form-control" name="transaction_direction" id="transaction-direction">
+              <option value="Outgoing">Outgoing</option>
+              <option value="Incoming">Incoming</option>
+            </select>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label>Amount</label>
+            <input type="number" class="form-control" name="amount" required>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label>Purpose</label>
+            <input type="text" class="form-control" name="purpose" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Add Transaction</button>
+      </form>
     </div>
+    <div class="card p-4 shadow-sm mt-4">
+      <h4>View Transactions</h4>
+      <button class="btn btn-info w-100 mb-3" id="fetch-transactions">Load Transactions</button>
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Type</th>
+              <th>Bank</th>
+              <th>Account</th>
+              <th>Direction</th>
+              <th>Amount</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody id="transactions-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Set today's date in the date field.
+    $("#date-field").val(new Date().toISOString().slice(0,10));
+    
+    // Populate account dropdown when a bank is selected.
+    const bankAccounts = {{ banks | tojson }};
+    $("#bank-select").change(function(){
+      const selectedBank = $(this).val();
+      $("#account-select").empty().append("<option value=''>Select Account</option>");
+      if(bankAccounts[selectedBank]){
+        bankAccounts[selectedBank].forEach(function(account){
+          $("#account-select").append(`<option value="${account}">${account}</option>`);
+        });
+      }
+    });
 
-    <script>
-        // ... I'll provide the JavaScript in the next message ...
-    </script>
+    function fetchTransactions(){
+      $.get("/view_transactions", function(data){
+        let rows = "";
+        data.transactions.forEach(function(tx){
+          rows += `<tr>
+            <td>${tx.date || ""}</td>
+            <td>${tx.time || ""}</td>
+            <td>${tx.type || ""}</td>
+            <td>${tx.bank || ""}</td>
+            <td>${tx.account || ""}</td>
+            <td>${tx.direction || ""}</td>
+            <td>${tx.amount || ""}</td>
+            <td>${tx.purpose || ""}</td>
+          </tr>`;
+        });
+        $("#transactions-table").html(rows);
+      }).fail(function(xhr, status, error){
+        console.error("Error fetching transactions:", error);
+      });
+    }
+
+    $("#fetch-transactions").click(fetchTransactions);
+
+    $("#transaction-form").submit(function(e){
+      e.preventDefault();
+      $.post("/add_transaction", $(this).serialize(), function(response){
+        alert(response.message);
+        fetchTransactions();
+        $("#transaction-form")[0].reset();
+        $("#date-field").val(new Date().toISOString().slice(0,10));
+      }).fail(function(){
+        alert("Error adding transaction.");
+      });
+    });
+  </script>
 </body>
 </html>
