@@ -174,7 +174,7 @@
       // Edit Transaction (all fields)
       $(document).on("click", ".edit-transaction", function () {
         let transactionId = $(this).data("id");
-        // Gather new values (in a real app, you might display a modal form pre-populated with current data)
+        // For simplicity, using prompt dialogs. In a production app, consider using a modal form.
         let newData = {
           id: transactionId,
           date: prompt("Enter new date (YYYY-MM-DD):"),
@@ -211,7 +211,7 @@
         let keyword = $("#keyword").val();
         let date = $("#filter-date").val();
         let bank = $("#filter-bank").val();
-        // Construct query parameters
+        // Construct query parameters and fetch filtered transactions
         let query = `?keyword=${keyword}&date=${date}&bank=${bank}`;
         fetchTransactions("/search_transactions" + query);
       });
