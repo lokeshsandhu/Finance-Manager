@@ -66,12 +66,26 @@ def add_transaction():
         return jsonify({"message": "Error adding transaction", "error": str(e)}), 500
 
 @app.route("/view_transactions")
+@app.route("/view_transactions")
 def view_transactions():
     try:
-        transactions = sheet.get_all_records()
-        return jsonify({"transactions": transactions}), 200
+        transactions = sheet.get_all_records()  # Fetch data from Google Sheets
+        formatted_transactions = []
+        for t in transactions:
+            formatted_transactions.append({
+                "date": t.get("Date", ""),  
+                "time": t.get("Time", ""),  
+                "type": t.get("Type", ""),  
+                "bank": t.get("Bank", ""),  
+                "account": t.get("Account", ""),  
+                "direction": t.get("Direction", ""),  
+                "amount": t.get("Amount", ""),  
+                "purpose": t.get("Purpose", ""),  
+            })
+        return jsonify({"transactions": formatted_transactions}), 200
     except Exception as e:
         return jsonify({"message": "Error fetching transactions", "error": str(e)}), 500
+
 
 @app.route("/search_transactions")
 def search_transactions():
