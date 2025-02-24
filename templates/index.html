@@ -7,6 +7,7 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body class="bg-light">
+  <!-- Navigation Bar -->
   <nav class="navbar navbar-light bg-light mb-3">
     <div class="container-fluid">
       <a class="navbar-brand" href="/">Finance Manager</a>
@@ -14,6 +15,7 @@
     </div>
   </nav>
   <div class="container mt-3">
+    <!-- Add Transaction Form -->
     <div class="card p-4 shadow-sm">
       <h4>Add Transaction</h4>
       <form id="transaction-form">
@@ -36,6 +38,7 @@
             </select>
           </div>
         </div>
+        <!-- Bank and Account Dropdowns (populated dynamically) -->
         <div class="row" id="bank-account-section">
           <div class="col-md-6 mb-3">
             <label>Bank</label>
@@ -73,6 +76,7 @@
         <button type="submit" class="btn btn-primary w-100">Add Transaction</button>
       </form>
     </div>
+    <!-- View Transactions Section -->
     <div class="card p-4 shadow-sm mt-4">
       <h4>View Transactions</h4>
       <button class="btn btn-info w-100 mb-3" id="fetch-transactions">Load Transactions</button>
@@ -96,10 +100,10 @@
     </div>
   </div>
   <script>
-    // Set today's date in the date field.
+    // Set default date to today.
     $("#date-field").val(new Date().toISOString().slice(0,10));
-    
-    // Populate account dropdown when a bank is selected.
+
+    // When a bank is selected, populate the Account dropdown.
     const bankAccounts = {{ banks | tojson }};
     $("#bank-select").change(function(){
       const selectedBank = $(this).val();
@@ -111,6 +115,7 @@
       }
     });
 
+    // Fetch transactions and display in table.
     function fetchTransactions(){
       $.get("/view_transactions", function(data){
         let rows = "";
@@ -134,6 +139,7 @@
 
     $("#fetch-transactions").click(fetchTransactions);
 
+    // Submit transaction form.
     $("#transaction-form").submit(function(e){
       e.preventDefault();
       $.post("/add_transaction", $(this).serialize(), function(response){
