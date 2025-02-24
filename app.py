@@ -147,13 +147,21 @@ def search_transactions():
 @app.route("/setup", methods=["GET", "POST"])
 def setup():
     if request.method == "GET":
-        # Render the setup page for configuring banks, accounts, and categories
+        # Render the setup page that allows bank and account entry.
         return render_template("setup.html")
     else:
         try:
-            data = request.form
-            # In a production app, save these preferences (e.g., to another sheet or a database)
-            # Here, we simply acknowledge receipt of the setup data.
+            bank = request.form.get("bank")
+            # Use getlist to receive multiple account entries.
+            account_names = request.form.getlist("account_name[]")
+            account_balances = request.form.getlist("account_balance[]")
+            
+            # For demonstration, we'll simply log the received values.
+            print("Setup Bank:", bank)
+            for name, balance in zip(account_names, account_balances):
+                print(f"Account: {name}, Balance: {balance}")
+            
+            # In a real app, you might save this configuration to a database or another Google Sheet.
             return jsonify({"message": "Setup preferences saved!"}), 200
         except Exception as e:
             return jsonify({"message": "Error saving setup preferences", "error": str(e)}), 500
