@@ -131,7 +131,7 @@
                 updateBankTotals();
             }
             
-            // If no banks exist, add one by default.
+            // Add a default bank block if none exist.
             if($("#banks-container").children().length === 0){
                 addBankBlock();
             }
@@ -223,7 +223,7 @@
             
             function validateForm(){
                 let isValid = true;
-                $(".bank-name, .account-name").removeClass("validation-error").next(".error-message").remove();
+                $(".bank-name").removeClass("validation-error").next(".error-message").remove();
                 const bankNames = new Set();
                 $(".bank-name").each(function(){
                     const name = $(this).val().trim();
@@ -239,3 +239,4 @@
     </script>
 </body>
 </html>
+
