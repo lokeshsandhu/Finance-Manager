@@ -27,36 +27,89 @@
             <input type="date" class="form-control" name="date" value="{{ default_date }}" required>
           </div>
           <div class="col-md-4 mb-3">
+            <label class="form-label">Time</label>
+            <input type="time" class="form-control" name="time" id="time-field" required>
+          </div>
+          <div class="col-md-4 mb-3">
             <label class="form-label">Type</label>
-            <select class="form-control" name="type" required>
+            <select class="form-control" name="type" id="transaction-type" required>
               <option value="Online">Online</option>
               <option value="In-Person">In-Person</option>
               <option value="Interac">Interac</option>
               <option value="Cash">Cash</option>
-              <option value="Across Accounts">Across Accounts</option>
             </select>
           </div>
         </div>
-        <div class="row">
-          <!-- Dropdown for Bank -->
+        <!-- Default Bank & Account (shown for Online, In-Person, and Interac "to someone") -->
+        <div id="default-bank-account" class="row">
           <div class="col-md-6 mb-3">
             <label class="form-label">Bank</label>
-            <select class="form-control" name="bank" required>
+            <select class="form-control" name="bank" id="bank-select">
               <option value="">Select Bank</option>
               <option value="Bank A">Bank A</option>
               <option value="Bank B">Bank B</option>
               <option value="Bank C">Bank C</option>
             </select>
           </div>
-          <!-- Dropdown for Account -->
           <div class="col-md-6 mb-3">
             <label class="form-label">Account</label>
-            <select class="form-control" name="account" required>
+            <select class="form-control" name="account" id="account-select">
               <option value="">Select Account</option>
               <option value="Savings">Savings</option>
               <option value="Checking">Checking</option>
               <option value="Credit">Credit</option>
             </select>
+          </div>
+        </div>
+        <!-- Interac Subtype for additional choices -->
+        <div id="interac-subtype-container" class="mb-3" style="display:none;">
+          <label class="form-label">Interac Subtype</label>
+          <select class="form-control" id="interac-subtype">
+            <option value="to">To Someone</option>
+            <option value="across">Across Accounts</option>
+          </select>
+        </div>
+        <!-- For Interac Across Accounts -->
+        <div id="interac-across-container" style="display:none;">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Transaction From - Bank</label>
+              <select class="form-control" id="from-bank">
+                <option value="">Select Bank</option>
+                <option value="Bank A">Bank A</option>
+                <option value="Bank B">Bank B</option>
+                <option value="Bank C">Bank C</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Transaction From - Account</label>
+              <select class="form-control" id="from-account">
+                <option value="">Select Account</option>
+                <option value="Savings">Savings</option>
+                <option value="Checking">Checking</option>
+                <option value="Credit">Credit</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Transaction To - Bank</label>
+              <select class="form-control" id="to-bank">
+                <option value="">Select Bank</option>
+                <option value="Bank A">Bank A</option>
+                <option value="Bank B">Bank B</option>
+                <option value="Bank C">Bank C</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Transaction To - Account</label>
+              <select class="form-control" id="to-account">
+                <option value="">Select Account</option>
+                <option value="Savings">Savings</option>
+                <option value="Checking">Checking</option>
+                <option value="Credit">Credit</option>
+              </select>
+            </div>
           </div>
         </div>
         <div class="row">
@@ -69,8 +122,8 @@
             <input type="text" class="form-control" name="purpose" required>
           </div>
           <div class="col-md-4 mb-3">
-            <label class="form-label">Place</label>
-            <input type="text" class="form-control" name="place" required>
+            <label class="form-label">Balance Left</label>
+            <input type="number" class="form-control" name="balance_left" required>
           </div>
         </div>
         <button type="submit" class="btn btn-primary w-100">Add Transaction</button>
@@ -110,12 +163,13 @@
             <tr>
               <th>ID</th>
               <th>Date</th>
+              <th>Time</th>
               <th>Type</th>
               <th>Bank</th>
               <th>Account</th>
               <th>Amount</th>
               <th>Purpose</th>
-              <th>Place</th>
+              <th>Balance Left</th>
               <th>Refund Status</th>
               <th>Actions</th>
             </tr>
@@ -128,20 +182,72 @@
 
   <script>
     $(document).ready(function () {
+      // Set default time to current time.
+      var now = new Date();
+      var hours = now.getHours().toString().padStart(2, '0');
+      var minutes = now.getMinutes().toString().padStart(2, '0');
+      $("#time-field").val(hours + ":" + minutes);
+
+      // Dynamic display based on transaction type.
+      $("#transaction-type").change(function(){
+        var type = $(this).val();
+        if(type === "Cash"){
+          $("#default-bank-account").hide();
+          $("#interac-subtype-container").hide();
+          $("#interac-across-container").hide();
+        } else if(type === "Interac"){
+          $("#default-bank-account").show();
+          $("#interac-subtype-container").show();
+          $("#interac-across-container").hide();
+        } else {
+          $("#default-bank-account").show();
+          $("#interac-subtype-container").hide();
+          $("#interac-across-container").hide();
+        }
+      });
+
+      $("#interac-subtype").change(function(){
+        var subtype = $(this).val();
+        if(subtype === "across"){
+          $("#interac-across-container").show();
+          $("#default-bank-account").hide();
+        } else {
+          $("#interac-across-container").hide();
+          $("#default-bank-account").show();
+        }
+      });
+
+      // On form submission, for Interac across accounts, combine the bank/account details.
+      $("#transaction-form").on("submit", function(e){
+        var type = $("#transaction-type").val();
+        if(type === "Interac" && $("#interac-subtype").val() === "across"){
+          var fromBank = $("#from-bank").val();
+          var fromAccount = $("#from-account").val();
+          var toBank = $("#to-bank").val();
+          var toAccount = $("#to-account").val();
+          var combinedBank = "From: " + fromBank + " / To: " + toBank;
+          var combinedAccount = "From: " + fromAccount + " / To: " + toAccount;
+          $("#bank-select").val(combinedBank);
+          $("#account-select").val(combinedAccount);
+        }
+      });
+
+      // Fetch Transactions & Search with debug logging.
       function fetchTransactions(url = "/view_transactions") {
-        console.log("Fetching transactions from", url);
+        console.log("Fetching from:", url);
         $.get(url, function (data) {
           let rows = "";
           data.transactions.forEach(function (transaction) {
             rows += `<tr>
                       <td>${transaction.id}</td>
                       <td>${transaction.date}</td>
+                      <td>${transaction.time}</td>
                       <td>${transaction.type}</td>
                       <td>${transaction.bank}</td>
                       <td>${transaction.account}</td>
                       <td>${transaction.amount}</td>
                       <td>${transaction.purpose}</td>
-                      <td>${transaction.place}</td>
+                      <td>${transaction.balance_left || ""}</td>
                       <td>${transaction.refund_status || ""}</td>
                       <td>
                         <button class='btn btn-warning btn-sm edit-transaction' data-id='${transaction.id}'>Edit</button>
@@ -155,10 +261,8 @@
           console.error("Error fetching transactions:", error);
         });
       }
-
       $("#fetch-transactions").click(fetchTransactions);
 
-      // Add Transaction
       $("#transaction-form").on("submit", function (e) {
         e.preventDefault();
         $.post("/add_transaction", $(this).serialize(), function (response) {
@@ -169,7 +273,6 @@
         });
       });
 
-      // Delete Transaction
       $(document).on("click", ".delete-transaction", function () {
         let transactionId = $(this).data("id");
         $.post("/delete_transaction", { id: transactionId }, function (response) {
@@ -180,18 +283,18 @@
         });
       });
 
-      // Edit Transaction (using prompts for simplicity)
       $(document).on("click", ".edit-transaction", function () {
         let transactionId = $(this).data("id");
         let newData = {
           id: transactionId,
           date: prompt("Enter new date (YYYY-MM-DD):"),
+          time: prompt("Enter new time (HH:MM):"),
           type: prompt("Enter new type:"),
           bank: prompt("Enter new bank:"),
           account: prompt("Enter new account:"),
           amount: prompt("Enter new amount:"),
           purpose: prompt("Enter new purpose:"),
-          place: prompt("Enter new place:")
+          balance_left: prompt("Enter new balance left:")
         };
         $.post("/edit_transaction", newData, function (response) {
           alert(response.message);
@@ -201,7 +304,6 @@
         });
       });
 
-      // Refund Transaction
       $(document).on("click", ".refund-transaction", function () {
         let transactionId = $(this).data("id");
         let refundType = prompt("Enter refund type (full/partial):", "full");
@@ -214,13 +316,12 @@
         });
       });
 
-      // Search & Filters
       $("#search-btn").click(function () {
         let keyword = $("#keyword").val();
         let date = $("#filter-date").val();
         let bank = $("#filter-bank").val();
         let query = `?keyword=${keyword}&date=${date}&bank=${bank}`;
-        console.log("Searching with query:", query);
+        console.log("Search query:", query);
         fetchTransactions("/search_transactions" + query);
       });
     });
