@@ -8,9 +8,15 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body class="bg-light">
-  <div class="container mt-5">
-    <h2 class="text-center mb-4">Finance Manager</h2>
-
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-light bg-light mb-3">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Finance Manager</a>
+      <a class="btn btn-outline-primary" href="/setup">Setup</a>
+    </div>
+  </nav>
+  
+  <div class="container mt-3">
     <!-- Add Transaction Card -->
     <div class="card p-4 shadow-sm">
       <h4 class="mb-3">Add Transaction</h4>
@@ -123,6 +129,7 @@
   <script>
     $(document).ready(function () {
       function fetchTransactions(url = "/view_transactions") {
+        console.log("Fetching transactions from", url);
         $.get(url, function (data) {
           let rows = "";
           data.transactions.forEach(function (transaction) {
@@ -144,6 +151,8 @@
                     </tr>`;
           });
           $("#transactions-table").html(rows);
+        }).fail(function(xhr, status, error) {
+          console.error("Error fetching transactions:", error);
         });
       }
 
@@ -171,10 +180,9 @@
         });
       });
 
-      // Edit Transaction (all fields)
+      // Edit Transaction (using prompts for simplicity)
       $(document).on("click", ".edit-transaction", function () {
         let transactionId = $(this).data("id");
-        // For simplicity, using prompt dialogs. In a production app, consider using a modal form.
         let newData = {
           id: transactionId,
           date: prompt("Enter new date (YYYY-MM-DD):"),
@@ -211,8 +219,8 @@
         let keyword = $("#keyword").val();
         let date = $("#filter-date").val();
         let bank = $("#filter-bank").val();
-        // Construct query parameters and fetch filtered transactions
         let query = `?keyword=${keyword}&date=${date}&bank=${bank}`;
+        console.log("Searching with query:", query);
         fetchTransactions("/search_transactions" + query);
       });
     });
