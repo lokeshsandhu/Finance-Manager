@@ -13,15 +13,17 @@ scope = ["https://spreadsheets.google.com/feeds",
 creds_json = json.loads(os.getenv("GOOGLE_CREDENTIALS"))
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, scope)
 client = gspread.authorize(creds)
-sheet = client.open("Finance Manager").sheet1  # Ensure header row matches: Date, Type, Bank, Account, Amount, Purpose, Place, Refund Status
+# Main transaction sheet
+sheet = client.open("Finance Manager").sheet1  # Ensure its header row matches below
 
-# Helper: Adjust for header row (assuming header is row 1)
+# Helper: Adjust for header row (assumes header is row 1)
 def get_sheet_row(transaction_id):
     return transaction_id + 1
 
+# ------------------ Main Page Routes ------------------
+
 @app.route("/")
 def home():
-    # Pass today's date to set the default value for date fields
     today = datetime.date.today().isoformat()
     return render_template("index.html", default_date=today)
 
@@ -29,17 +31,18 @@ def home():
 def add_transaction():
     try:
         data = request.form
-        # Append transaction: Date, Type, Bank, Account, Amount, Purpose, Place, Refund Status
-        sheet.append_row([
-            data["date"], 
-            data["type"], 
-            data["bank"], 
-            data["account"], 
-            data["amount"], 
-            data["purpose"], 
-            data["place"],
-            ""  # Initially, no refund status
-        ])
+        # For interac across accounts, the bank and account fields may be combined already.
+        date = data["date"]
+        time_field = data["time"]
+        type_field = data["type"]
+        bank = data.get("bank", "")
+        account = data.get("account", "")
+        amount = data["amount"]
+        purpose = data["purpose"]
+        balance_left = data.get("balance_left", "")
+        # Append a new row to the main sheet.
+        # Columns: Date, Time, Type, Bank, Account, Amount, Purpose, Balance Left, Refund Status
+        sheet.append_row([date, time_field, type_field, bank, account, amount, purpose, balance_left, ""])
         return jsonify({"message": "Transaction Added Successfully!"}), 200
     except Exception as e:
         return jsonify({"message": "Error adding transaction", "error": str(e)}), 500
@@ -53,12 +56,13 @@ def view_transactions():
             formatted_transactions.append({
                 "id": idx + 1,
                 "date": t.get("Date", ""),
+                "time": t.get("Time", ""),
                 "type": t.get("Type", ""),
                 "bank": t.get("Bank", ""),
                 "account": t.get("Account", ""),
                 "amount": t.get("Amount", ""),
                 "purpose": t.get("Purpose", ""),
-                "place": t.get("Place", ""),
+                "balance_left": t.get("Balance Left", ""),
                 "refund_status": t.get("Refund Status", "")
             })
         return jsonify({"transactions": formatted_transactions}), 200
@@ -72,16 +76,17 @@ def edit_transaction():
         data = request.form
         updated_row = [
             data["date"],
+            data["time"],
             data["type"],
             data["bank"],
             data["account"],
             data["amount"],
             data["purpose"],
-            data["place"],
+            data.get("balance_left", ""),
             data.get("refund_status", "")
         ]
         row_number = get_sheet_row(transaction_id)
-        sheet.update(f"A{row_number}:H{row_number}", [updated_row])
+        sheet.update(f"A{row_number}:I{row_number}", [updated_row])
         return jsonify({"message": "Transaction Edited Successfully!"}), 200
     except Exception as e:
         return jsonify({"message": "Error editing transaction", "error": str(e)}), 500
@@ -106,7 +111,7 @@ def refund_transaction():
         refund_status = f"Refunded ({refund_type})"
         if refund_type == "partial" and refund_amount:
             refund_status += f" - ${refund_amount}"
-        sheet.update_cell(row_number, 8, refund_status)
+        sheet.update_cell(row_number, 9, refund_status)
         return jsonify({"message": "Transaction marked as refunded!"}), 200
     except Exception as e:
         return jsonify({"message": "Error processing refund", "error": str(e)}), 500
@@ -130,35 +135,74 @@ def search_transactions():
             filtered.append({
                 "id": idx + 1,
                 "date": t.get("Date", ""),
+                "time": t.get("Time", ""),
                 "type": t.get("Type", ""),
                 "bank": t.get("Bank", ""),
                 "account": t.get("Account", ""),
                 "amount": t.get("Amount", ""),
                 "purpose": t.get("Purpose", ""),
-                "place": t.get("Place", ""),
+                "balance_left": t.get("Balance Left", ""),
                 "refund_status": t.get("Refund Status", "")
             })
         return jsonify({"transactions": filtered}), 200
     except Exception as e:
         return jsonify({"message": "Error searching transactions", "error": str(e)}), 500
 
-# Updated Setup route to allow multiple banks (each with accounts)
+# ------------------ Setup Routes ------------------
 @app.route("/setup", methods=["GET", "POST"])
 def setup():
     if request.method == "GET":
         return render_template("setup.html")
     else:
         try:
+            # Gather multiple bank blocks.
             banks = request.form.getlist("bank[]")
             setup_data = []
             for i, bank in enumerate(banks):
                 account_names = request.form.getlist(f"account_name_{i}[]")
                 account_balances = request.form.getlist(f"account_balance_{i}[]")
                 accounts = []
+                total = 0
                 for name, balance in zip(account_names, account_balances):
-                    accounts.append({"name": name, "balance": balance})
-                setup_data.append({"bank": bank, "accounts": accounts})
-            print("Setup Data:", setup_data)  # For debugging/logging
+                    amt = float(balance)
+                    accounts.append({"name": name, "balance": amt})
+                    total += amt
+                setup_data.append({"bank": bank, "accounts": accounts, "total": total})
+            # Write setup_data to a worksheet named "banking information"
+            try:
+                bank_sheet = client.open("Finance Manager").worksheet("banking information")
+                bank_sheet.clear()
+            except gspread.exceptions.WorksheetNotFound:
+                bank_sheet = client.open("Finance Manager").add_worksheet(title="banking information", rows="100", cols="20")
+            # Prepare data matrix.
+            num_banks = len(setup_data)
+            # First row: bank names.
+            header = [d["bank"] for d in setup_data]
+            data_matrix = [header]
+            # Determine max number of accounts across banks.
+            max_accounts = max(len(d["accounts"]) for d in setup_data) if setup_data else 0
+            # For each account index, add two rows: one for account names, one for balances.
+            for j in range(max_accounts):
+                row_names = []
+                row_balances = []
+                for d in setup_data:
+                    if j < len(d["accounts"]):
+                        row_names.append(d["accounts"][j]["name"])
+                        row_balances.append(d["accounts"][j]["balance"])
+                    else:
+                        row_names.append("")
+                        row_balances.append("")
+                data_matrix.append(row_names)
+                data_matrix.append(row_balances)
+            # Totals row per bank.
+            totals = [d["total"] for d in setup_data]
+            data_matrix.append(totals)
+            # Overall total (you can adjust placement as desired)
+            overall_total = sum(totals)
+            overall_row = [overall_total] + [""]*(num_banks-1)
+            data_matrix.append(overall_row)
+            # Update the worksheet starting at A1.
+            bank_sheet.update("A1", data_matrix)
             return jsonify({"message": "Setup preferences saved!", "data": setup_data}), 200
         except Exception as e:
             return jsonify({"message": "Error saving setup preferences", "error": str(e)}), 500
