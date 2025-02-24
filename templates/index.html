@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,69 +9,109 @@
 </head>
 <body class="bg-light">
     <div class="container mt-5">
-        <h2 class="text-center mb-4">Finance Manager</h2><div class="card p-4 shadow-sm">
-        <h4 class="mb-3">Add Transaction</h4>
-        <form id="transaction-form">
-            <div class="mb-3">
-                <label class="form-label">Date</label>
-                <input type="date" class="form-control" name="date" required>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Type</label>
-                <select class="form-control" name="type" required>
-                    <option>Online</option>
-                    <option>In-Person</option>
-                    <option>Interac</option>
-                    <option>Cash</option>
-                    <option>Across Accounts</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Bank</label>
-                <input type="text" class="form-control" name="bank">
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Account</label>
-                <input type="text" class="form-control" name="account">
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Amount</label>
-                <input type="number" class="form-control" name="amount" required>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Purpose</label>
-                <input type="text" class="form-control" name="purpose" required>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Place</label>
-                <input type="text" class="form-control" name="place" required>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Add Transaction</button>
-        </form>
-        <div id="response-message" class="mt-3 text-success" style="display: none;"></div>
-    </div>
-</div>
+        <h2 class="text-center mb-4">Finance Manager</h2>
+        
+        <div class="card p-4 shadow-sm">
+            <h4 class="mb-3">Add Transaction</h4>
+            <form id="transaction-form">
+                <div class="mb-3">
+                    <label class="form-label">Date</label>
+                    <input type="date" class="form-control" name="date" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Type</label>
+                    <select class="form-control" name="type" required>
+                        <option>Online</option>
+                        <option>In-Person</option>
+                        <option>Interac</option>
+                        <option>Cash</option>
+                        <option>Across Accounts</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Bank</label>
+                    <input type="text" class="form-control" name="bank">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Account</label>
+                    <input type="text" class="form-control" name="account">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Amount</label>
+                    <input type="number" class="form-control" name="amount" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Purpose</label>
+                    <input type="text" class="form-control" name="purpose" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Place</label>
+                    <input type="text" class="form-control" name="place" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Add Transaction</button>
+            </form>
+            <div id="response-message" class="mt-3 text-success" style="display: none;"></div>
+        </div>
 
-<script>
-    $(document).ready(function() {
-        $("#transaction-form").submit(function(event) {
-            event.preventDefault(); // Prevent form submission from refreshing page
+        <div class="card p-4 shadow-sm mt-4">
+            <h4 class="mb-3">View Transactions</h4>
+            <button class="btn btn-info w-100 mb-3" id="fetch-transactions">Load Transactions</button>
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Bank</th>
+                            <th>Account</th>
+                            <th>Amount</th>
+                            <th>Purpose</th>
+                            <th>Place</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactions-table"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        $(document).ready(function() {
+            $("#transaction-form").submit(function(event) {
+                event.preventDefault(); 
+                
+                $.ajax({
+                    type: "POST",
+                    url: "/add_transaction",
+                    data: $(this).serialize(),
+                    success: function(response) {
+                        $("#response-message").text("Transaction Added Successfully!").show().delay(3000).fadeOut();
+                        $("#transaction-form")[0].reset(); 
+                    },
+                    error: function() {
+                        $("#response-message").text("Error adding transaction. Try again.").addClass("text-danger").show().delay(3000).fadeOut();
+                    }
+                });
+            });
             
-            $.ajax({
-                type: "POST",
-                url: "/add_transaction",
-                data: $(this).serialize(),
-                success: function(response) {
-                    $("#response-message").text("Transaction Added Successfully!").show().delay(3000).fadeOut();
-                    $("#transaction-form")[0].reset(); // Reset form fields after submission
-                },
-                error: function() {
-                    $("#response-message").text("Error adding transaction. Try again.").addClass("text-danger").show().delay(3000).fadeOut();
-                }
+            $("#fetch-transactions").click(function() {
+                $.get("/view_transactions", function(data) {
+                    let rows = "";
+                    data.transactions.forEach(function(transaction) {
+                        rows += `<tr>
+                                    <td>${transaction.Date}</td>
+                                    <td>${transaction.Type}</td>
+                                    <td>${transaction.Bank}</td>
+                                    <td>${transaction.Account}</td>
+                                    <td>${transaction.Amount}</td>
+                                    <td>${transaction.Purpose}</td>
+                                    <td>${transaction.Place}</td>
+                                </tr>`;
+                    });
+                    $("#transactions-table").html(rows);
+                });
             });
         });
-    });
-</script>
-
+    </script>
 </body>
 </html>
