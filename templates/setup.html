@@ -11,7 +11,7 @@
 </head>
 <body class="bg-light">
   <div class="container mt-5">
-    <!-- Navigation: Button to return to Main Site -->
+    <!-- Navigation: Link to Main Site -->
     <div class="mb-3">
       <a href="/" class="btn btn-link">&larr; Go to Main Site</a>
     </div>
@@ -47,8 +47,7 @@
 
   <script>
     $(document).ready(function(){
-      var bankIndex = 1; // starting index for additional bank blocks
-      // Add Another Bank
+      var bankIndex = 1;
       $("#add-bank").click(function(){
         var bankBlock = `
           <div class="bank-block">
@@ -75,11 +74,10 @@
         bankIndex++;
       });
 
-      // Delegate event for adding additional account rows within a bank block
       $(document).on("click", ".add-account", function(){
         var accountsContainer = $(this).closest(".accounts-container");
         var firstInputName = accountsContainer.find("input[name^='account_name_']").first().attr("name");
-        var indexMatch = firstInputName.match(/account_name_(\d+)\[\]/);
+        var indexMatch = firstInputName.match(/account_name_(\d+)/);
         var currentIndex = indexMatch ? indexMatch[1] : "0";
         var accountRow = `
           <div class="row mb-3 account-row">
@@ -95,7 +93,6 @@
         accountsContainer.append(accountRow);
       });
 
-      // Submit the Setup form via AJAX
       $("#setup-form").on("submit", function(e){
         e.preventDefault();
         $.post("/setup", $(this).serialize(), function(response){
