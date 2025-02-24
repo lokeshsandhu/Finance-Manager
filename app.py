@@ -3,17 +3,46 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 import json
+import os
 
 app = Flask(__name__)
 
-# Setup Google Sheets credentials
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
-client = gspread.authorize(creds)
+# Setup Google Sheets credentials from environment variable
+def get_credentials():
+    """Get credentials from environment variable"""
+    try:
+        creds_dict = json.loads(os.environ.get('GOOGLE_CREDENTIALS', '{}'))
+        return ServiceAccountCredentials.from_json_keyfile_dict(
+            creds_dict,
+            ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        )
+    except Exception as e:
+        print(f"Error loading credentials: {str(e)}")
+        return None
 
-# Open the Google Sheets document
-sheet = client.open("Finance Manager").sheet1
-setup_sheet = client.open("Finance Manager").worksheet("Setup")
+# Initialize Google Sheets client
+def init_sheets_client():
+    """Initialize and return Google Sheets client"""
+    try:
+        creds = get_credentials()
+        if not creds:
+            raise Exception("Failed to load credentials")
+        return gspread.authorize(creds)
+    except Exception as e:
+        print(f"Error initializing sheets client: {str(e)}")
+        return None
+
+# Initialize client and worksheets
+client = init_sheets_client()
+if client:
+    try:
+        workbook = client.open("Finance Manager")
+        sheet = workbook.sheet1
+        setup_sheet = workbook.worksheet("Setup")
+    except Exception as e:
+        print(f"Error opening sheets: {str(e)}")
+        sheet = None
+        setup_sheet = None
 
 def get_banks_data():
     """Fetch banks and accounts data from setup sheet"""
