@@ -21,11 +21,11 @@
                 <div class="mb-3">
                     <label class="form-label">Type</label>
                     <select class="form-control" name="type" required>
-                        <option>Online</option>
-                        <option>In-Person</option>
-                        <option>Interac</option>
-                        <option>Cash</option>
-                        <option>Across Accounts</option>
+                        <option value="Online">Online</option>
+                        <option value="In-Person">In-Person</option>
+                        <option value="Interac">Interac</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Across Accounts">Across Accounts</option>
                     </select>
                 </div>
                 <div class="mb-3">
@@ -99,13 +99,13 @@
                     let rows = "";
                     data.transactions.forEach(function(transaction) {
                         rows += `<tr>
-                                    <td>${transaction.Date}</td>
-                                    <td>${transaction.Type}</td>
-                                    <td>${transaction.Bank}</td>
-                                    <td>${transaction.Account}</td>
-                                    <td>${transaction.Amount}</td>
-                                    <td>${transaction.Purpose}</td>
-                                    <td>${transaction.Place}</td>
+                                    <td>${transaction.date}</td>
+                                    <td>${transaction.type}</td>
+                                    <td>${transaction.bank}</td>
+                                    <td>${transaction.account}</td>
+                                    <td>${transaction.amount}</td>
+                                    <td>${transaction.purpose}</td>
+                                    <td>${transaction.place}</td>
                                 </tr>`;
                     });
                     $("#transactions-table").html(rows);
