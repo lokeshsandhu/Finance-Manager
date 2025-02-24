@@ -13,15 +13,15 @@ scope = ["https://spreadsheets.google.com/feeds",
 creds_json = json.loads(os.getenv("GOOGLE_CREDENTIALS"))
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, scope)
 client = gspread.authorize(creds)
-sheet = client.open("Finance Manager").sheet1  # Main transaction sheet
+sheet = client.open("Finance Manager").sheet1  # Ensure your sheet's header row matches the keys below
 
-# Helper: get current row number (adjusting for header row)
+# Helper: Adjust for header row
 def get_sheet_row(transaction_id):
-    return transaction_id + 1  # assuming header is row 1
+    return transaction_id + 1  # header is assumed to be row 1
 
 @app.route("/")
 def home():
-    # Pass default date to the template
+    # Pass today's date to set the default value for date fields
     today = datetime.date.today().isoformat()
     return render_template("index.html", default_date=today)
 
@@ -29,7 +29,7 @@ def home():
 def add_transaction():
     try:
         data = request.form
-        # Append new transaction (fields: date, type, bank, account, amount, purpose, place)
+        # Append transaction: Date, Type, Bank, Account, Amount, Purpose, Place, Refund Status
         sheet.append_row([
             data["date"], 
             data["type"], 
@@ -37,7 +37,8 @@ def add_transaction():
             data["account"], 
             data["amount"], 
             data["purpose"], 
-            data["place"]
+            data["place"],
+            ""  # Initially, no refund status
         ])
         return jsonify({"message": "Transaction Added Successfully!"}), 200
     except Exception as e:
@@ -58,7 +59,7 @@ def view_transactions():
                 "amount": t.get("Amount", ""),
                 "purpose": t.get("Purpose", ""),
                 "place": t.get("Place", ""),
-                "refund_status": t.get("Refund Status", "")  # New column for refund info
+                "refund_status": t.get("Refund Status", "")
             })
         return jsonify({"transactions": formatted_transactions}), 200
     except Exception as e:
@@ -68,7 +69,6 @@ def view_transactions():
 def edit_transaction():
     try:
         transaction_id = int(request.form["id"])
-        # Retrieve all editable fields from the request
         data = request.form
         updated_row = [
             data["date"],
@@ -77,11 +77,11 @@ def edit_transaction():
             data["account"],
             data["amount"],
             data["purpose"],
-            data["place"]
+            data["place"],
+            data.get("refund_status", "")  # Preserve refund status if present
         ]
         row_number = get_sheet_row(transaction_id)
-        # Update the entire row in the sheet (columns A-G)
-        sheet.update(f"A{row_number}:G{row_number}", [updated_row])
+        sheet.update(f"A{row_number}:H{row_number}", [updated_row])
         return jsonify({"message": "Transaction Edited Successfully!"}), 200
     except Exception as e:
         return jsonify({"message": "Error editing transaction", "error": str(e)}), 500
@@ -100,11 +100,13 @@ def delete_transaction():
 def refund_transaction():
     try:
         transaction_id = int(request.form["id"])
-        refund_amount = request.form.get("refund_amount", None)
         refund_type = request.form.get("refund_type", "full")  # full or partial
+        refund_amount = request.form.get("refund_amount", "")
         row_number = get_sheet_row(transaction_id)
-        # Mark the transaction as refunded. Here we update an 8th column "Refund Status".
+        # Mark the transaction as refunded in the "Refund Status" column
         refund_status = f"Refunded ({refund_type})"
+        if refund_type == "partial" and refund_amount:
+            refund_status += f" - ${refund_amount}"
         sheet.update_cell(row_number, 8, refund_status)
         return jsonify({"message": "Transaction marked as refunded!"}), 200
     except Exception as e:
@@ -119,7 +121,7 @@ def search_transactions():
         transactions = sheet.get_all_records()
         filtered = []
         for idx, t in enumerate(transactions):
-            # Simple search across all fields and filters
+            # Combine all transaction values to search for the keyword
             t_str = " ".join([str(v) for v in t.values()]).lower()
             if keyword and keyword not in t_str:
                 continue
@@ -145,14 +147,13 @@ def search_transactions():
 @app.route("/setup", methods=["GET", "POST"])
 def setup():
     if request.method == "GET":
-        # Render a setup page where users can choose banks, account types, categories, etc.
+        # Render the setup page for configuring banks, accounts, and categories
         return render_template("setup.html")
     else:
         try:
-            # Save setup preferences (for simplicity, this could be stored in another Google Sheet or a config file)
             data = request.form
-            # Example: data might include a JSON string of banks, accounts, and categories.
-            # Save or process the data as needed.
+            # In a production app, save these preferences (e.g., to another sheet or a database)
+            # Here, we simply acknowledge receipt of the setup data.
             return jsonify({"message": "Setup preferences saved!"}), 200
         except Exception as e:
             return jsonify({"message": "Error saving setup preferences", "error": str(e)}), 500
