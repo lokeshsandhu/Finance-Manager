@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Finance Manager</title>
+</head>
+<body>
+    <h2>Add Transaction</h2>
+    <form action="/add_transaction" method="post">
+        Date: <input type="date" name="date"><br>
+        Type: <select name="type">
+            <option>Online</option>
+            <option>In-Person</option>
+            <option>Interac</option>
+            <option>Cash</option>
+            <option>Across Accounts</option>
+        </select><br>
+        Bank: <input type="text" name="bank"><br>
+        Account: <input type="text" name="account"><br>
+        Amount: <input type="number" name="amount"><br>
+        Purpose: <input type="text" name="purpose"><br>
+        Place: <input type="text" name="place"><br>
+        <input type="submit" value="Add Transaction">
+    </form>
+
+    <h2>View Transactions</h2>
+    <button onclick="fetchTransactions()">Show Transactions</button>
+    <div id="transactions"></div>
+
+    <script>
+        function fetchTransactions() {
+            fetch('/view_transactions')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('transactions').innerHTML = JSON.stringify(data.transactions, null, 2);
+                });
+        }
+    </script>
+</body>
+</html>
