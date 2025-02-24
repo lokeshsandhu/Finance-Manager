@@ -60,6 +60,7 @@
                 <table class="table table-bordered table-striped">
                     <thead>
                         <tr>
+                            <th>ID</th>
                             <th>Date</th>
                             <th>Type</th>
                             <th>Bank</th>
@@ -67,6 +68,7 @@
                             <th>Amount</th>
                             <th>Purpose</th>
                             <th>Place</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="transactions-table"></tbody>
@@ -87,6 +89,7 @@
                     success: function(response) {
                         $("#response-message").text("Transaction Added Successfully!").show().delay(3000).fadeOut();
                         $("#transaction-form")[0].reset(); 
+                        fetchTransactions();
                     },
                     error: function() {
                         $("#response-message").text("Error adding transaction. Try again.").addClass("text-danger").show().delay(3000).fadeOut();
@@ -94,11 +97,12 @@
                 });
             });
             
-            $("#fetch-transactions").click(function() {
+            function fetchTransactions() {
                 $.get("/view_transactions", function(data) {
                     let rows = "";
-                    data.transactions.forEach(function(transaction) {
+                    data.transactions.forEach(function(transaction, index) {
                         rows += `<tr>
+                                    <td>${index + 1}</td>
                                     <td>${transaction.date}</td>
                                     <td>${transaction.type}</td>
                                     <td>${transaction.bank}</td>
@@ -106,11 +110,17 @@
                                     <td>${transaction.amount}</td>
                                     <td>${transaction.purpose}</td>
                                     <td>${transaction.place}</td>
+                                    <td>
+                                        <button class='btn btn-warning btn-sm edit-transaction' data-id='${index + 1}'>Edit</button>
+                                        <button class='btn btn-danger btn-sm delete-transaction' data-id='${index + 1}'>Delete</button>
+                                    </td>
                                 </tr>`;
                     });
                     $("#transactions-table").html(rows);
                 });
-            });
+            }
+
+            $("#fetch-transactions").click(fetchTransactions);
         });
     </script>
 </body>
