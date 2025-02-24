@@ -19,32 +19,23 @@
             padding: 15px;
             border-bottom: 1px solid #eee;
         }
-        .remove-account { 
+        .remove-account, .remove-bank { 
             position: absolute; 
             right: 10px; 
-            top: 50%; 
-            transform: translateY(-50%);
             cursor: pointer; 
             color: #dc3545;
             font-size: 1.2em;
         }
-        .remove-bank { 
-            position: absolute; 
-            right: 10px; 
-            top: 10px; 
-            cursor: pointer; 
-            color: #dc3545;
-            font-size: 1.5em;
-        }
+        .remove-bank { top: 10px; font-size: 1.5em; }
+        .remove-account { top: 50%; transform: translateY(-50%); }
         .bank-summary {
             margin-top: 10px;
             padding: 10px;
             background-color: #f8f9fa;
             border-radius: 4px;
+            font-weight: bold;
         }
-        .validation-error {
-            border-color: #dc3545;
-        }
+        .validation-error { border-color: #dc3545; }
         .error-message {
             color: #dc3545;
             font-size: 0.875em;
@@ -54,144 +45,65 @@
 </head>
 <body class="bg-light">
     <div class="container mt-5">
-        <!-- Navigation and Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <a href="/" class="btn btn-link">&larr; Go to Main Site</a>
             <h2 class="mb-0">Setup Banks and Accounts</h2>
             <div></div>
         </div>
-
-        <!-- Setup Form -->
         <form id="setup-form">
-            <div id="banks-container">
-                {% for bank_name, accounts in banks.items() %}
-                <div class="bank-block">
-                    <span class="remove-bank">&times;</span>
-                    <div class="mb-3">
-                        <label class="form-label">Bank Name</label>
-                        <input type="text" class="form-control bank-name" 
-                               name="bank[]" value="{{ bank_name }}" required>
-                    </div>
-                    <div class="accounts-container">
-                        <h5>Accounts</h5>
-                        {% for account in accounts %}
-                        <div class="account-row">
-                            <span class="remove-account">&times;</span>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <label class="form-label">Account Name</label>
-                                    <input type="text" class="form-control account-name" 
-                                           name="account_name_{{ loop.index0 }}[]" 
-                                           value="{{ account.name }}" required>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Account Type</label>
-                                    <select class="form-control" name="account_type_{{ loop.index0 }}[]">
-                                        <option value="Checking" {% if account.type == 'Checking' %}selected{% endif %}>Checking</option>
-                                        <option value="Savings" {% if account.type == 'Savings' %}selected{% endif %}>Savings</option>
-                                        <option value="Credit Card" {% if account.type == 'Credit Card' %}selected{% endif %}>Credit Card</option>
-                                        <option value="Investment" {% if account.type == 'Investment' %}selected{% endif %}>Investment</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Current Balance</label>
-                                    <input type="number" class="form-control account-balance" 
-                                           name="account_balance_{{ loop.index0 }}[]" 
-                                           value="{{ account.balance }}" step="0.01" required>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                        <button type="button" class="btn btn-secondary btn-sm add-account mt-3">Add Account</button>
-                    </div>
-                    <div class="bank-summary">
-                        <strong>Total Balance: </strong>
-                        <span class="bank-total">$0.00</span>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-
-            <!-- Action Buttons -->
+            <div id="banks-container"></div>
             <div class="d-flex gap-2 mb-3">
                 <button type="button" id="add-bank" class="btn btn-secondary">Add Another Bank</button>
                 <button type="submit" class="btn btn-primary">Save Preferences</button>
             </div>
         </form>
-
-        <!-- Status Messages -->
         <div id="setup-message" class="alert" style="display: none;"></div>
     </div>
-
     <script>
         $(document).ready(function(){
-            let bankIndex = "{{ banks|length }}" * 1;  // Convert to number
-            
-            // Add new bank
-            $("#add-bank").click(function(){
-                bankIndex++;
-                const bankBlock = `
-                    <div class="bank-block">
-                        <span class="remove-bank">&times;</span>
-                        <div class="mb-3">
-                            <label class="form-label">Bank Name</label>
-                            <input type="text" class="form-control bank-name" 
-                                   name="bank[]" required>
-                        </div>
-                        <div class="accounts-container">
-                            <h5>Accounts</h5>
-                            <div class="account-row">
-                                <span class="remove-account">&times;</span>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Account Name</label>
-                                        <input type="text" class="form-control account-name" 
-                                               name="account_name_\${bankIndex}[]" required>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Account Type</label>
-                                        <select class="form-control" name="account_type_\${bankIndex}[]">
-                                            <option value="Checking">Checking</option>
-                                            <option value="Savings">Savings</option>
-                                            <option value="Credit Card">Credit Card</option>
-                                            <option value="Investment">Investment</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Current Balance</label>
-                                        <input type="number" class="form-control account-balance" 
-                                               name="account_balance_\${bankIndex}[]" step="0.01" required>
-                                    </div>
+            let bankIndex = 0;
+            // Function to add a bank block.
+            function addBankBlock(existingData) {
+                let bankName = existingData ? existingData.bank : "";
+                let accountsHtml = "";
+                if(existingData && existingData.accounts) {
+                    existingData.accounts.forEach((acc) => {
+                        accountsHtml += `
+                        <div class="account-row">
+                            <span class="remove-account">&times;</span>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Account Name</label>
+                                    <input type="text" class="form-control account-name" name="account_name_${bankIndex}[]" value="${acc.name}" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Account Type</label>
+                                    <select class="form-control" name="account_type_${bankIndex}[]">
+                                        <option value="Checking" ${acc.type === "Checking" ? "selected" : ""}>Checking</option>
+                                        <option value="Savings" ${acc.type === "Savings" ? "selected" : ""}>Savings</option>
+                                        <option value="Credit Card" ${acc.type === "Credit Card" ? "selected" : ""}>Credit Card</option>
+                                        <option value="Investment" ${acc.type === "Investment" ? "selected" : ""}>Investment</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Current Balance</label>
+                                    <input type="number" class="form-control account-balance" name="account_balance_${bankIndex}[]" value="${acc.balance}" step="0.01" required>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-secondary btn-sm add-account mt-3">Add Account</button>
-                        </div>
-                        <div class="bank-summary">
-                            <strong>Total Balance: </strong>
-                            <span class="bank-total">$0.00</span>
-                        </div>
-                    </div>`;
-                $("#banks-container").append(bankBlock);
-                updateBankTotals();
-            });
-
-            // Add new account
-            $(document).on("click", ".add-account", function(){
-                const bankBlock = $(this).closest(".bank-block");
-                const bankIndex = bankBlock.index();
-                
-                const accountRow = `
+                        </div>`;
+                    });
+                } else {
+                    accountsHtml = `
                     <div class="account-row">
                         <span class="remove-account">&times;</span>
                         <div class="row">
                             <div class="col-md-4">
                                 <label class="form-label">Account Name</label>
-                                <input type="text" class="form-control account-name" 
-                                       name="account_name_\${bankIndex}[]" required>
+                                <input type="text" class="form-control account-name" name="account_name_${bankIndex}[]" required>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Account Type</label>
-                                <select class="form-control" name="account_type_\${bankIndex}[]">
+                                <select class="form-control" name="account_type_${bankIndex}[]">
                                     <option value="Checking">Checking</option>
                                     <option value="Savings">Savings</option>
                                     <option value="Credit Card">Credit Card</option>
@@ -200,121 +112,141 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Current Balance</label>
-                                <input type="number" class="form-control account-balance" 
-                                       name="account_balance_\${bankIndex}[]" step="0.01" required>
+                                <input type="number" class="form-control account-balance" name="account_balance_${bankIndex}[]" step="0.01" required>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+                const bankBlock = `
+                    <div class="bank-block">
+                        <span class="remove-bank">&times;</span>
+                        <div class="mb-3">
+                            <label class="form-label">Bank Name</label>
+                            <input type="text" class="form-control bank-name" name="bank[]" value="${bankName}" required>
+                        </div>
+                        <div class="accounts-container">
+                            <h5>Accounts</h5>
+                            ${accountsHtml}
+                            <button type="button" class="btn btn-secondary btn-sm add-account mt-3">Add Account</button>
+                        </div>
+                        <div class="bank-summary">
+                            <strong>Total Balance: </strong>
+                            <span class="bank-total">$0.00</span>
+                        </div>
+                    </div>`;
+                $("#banks-container").append(bankBlock);
+                bankIndex++;
+                updateBankTotals();
+            }
+            
+            // If no banks exist, add one by default.
+            if($("#banks-container").children().length === 0){
+                addBankBlock();
+            }
+            
+            $("#add-bank").click(function(){
+                addBankBlock();
+            });
+            
+            $(document).on("click", ".add-account", function(){
+                const bankBlock = $(this).closest(".bank-block");
+                const currentIndex = bankBlock.index();
+                const accountRow = `
+                    <div class="account-row">
+                        <span class="remove-account">&times;</span>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Account Name</label>
+                                <input type="text" class="form-control account-name" name="account_name_${currentIndex}[]" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Account Type</label>
+                                <select class="form-control" name="account_type_${currentIndex}[]">
+                                    <option value="Checking">Checking</option>
+                                    <option value="Savings">Savings</option>
+                                    <option value="Credit Card">Credit Card</option>
+                                    <option value="Investment">Investment</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Current Balance</label>
+                                <input type="number" class="form-control account-balance" name="account_balance_${currentIndex}[]" step="0.01" required>
                             </div>
                         </div>
                     </div>`;
                 $(accountRow).insertBefore($(this));
                 updateBankTotals();
             });
-
-            // Remove account
+            
             $(document).on("click", ".remove-account", function(){
                 const accountsContainer = $(this).closest(".accounts-container");
-                const accountRows = accountsContainer.find(".account-row");
-                
-                if (accountRows.length > 1) {
+                if(accountsContainer.find(".account-row").length > 1){
                     $(this).closest(".account-row").remove();
                     updateBankTotals();
                 } else {
                     showMessage("Each bank must have at least one account", "warning");
                 }
             });
-
-            // Remove bank
+            
             $(document).on("click", ".remove-bank", function(){
-                const bankBlocks = $(".bank-block");
-                
-                if (bankBlocks.length > 1) {
+                if($(".bank-block").length > 1){
                     $(this).closest(".bank-block").remove();
                     updateBankTotals();
                 } else {
                     showMessage("You must have at least one bank", "warning");
                 }
             });
-
-            // Update bank totals when balance changes
-            $(document).on("input", ".account-balance", function() {
+            
+            $(document).on("input", ".account-balance", function(){
                 updateBankTotals();
             });
-
-            // Form submission
-            $("#setup-form").submit(function(e){
-                e.preventDefault();
-                
-                if (!validateForm()) {
-                    return;
-                }
-                
-                $.ajax({
-                    url: "/setup",
-                    method: "POST",
-                    data: $(this).serialize(),
-                    success: function(response) {
-                        showMessage(response.message, "success");
-                        setTimeout(() => window.location.href = "/", 2000);
-                    },
-                    error: function(error) {
-                        showMessage(error.responseJSON?.message || "Error saving setup", "danger");
-                    }
-                });
-            });
-
-            // Helper functions
-            function updateBankTotals() {
-                $(".bank-block").each(function() {
+            
+            function updateBankTotals(){
+                $(".bank-block").each(function(){
                     let total = 0;
-                    $(this).find(".account-balance").each(function() {
+                    $(this).find(".account-balance").each(function(){
                         total += parseFloat($(this).val()) || 0;
                     });
                     $(this).find(".bank-total").text(`$${total.toFixed(2)}`);
                 });
             }
-
-            function validateForm() {
+            
+            function showMessage(message, type){
+                $("#setup-message").removeClass().addClass(`alert alert-${type}`).text(message).fadeIn();
+                setTimeout(() => $("#setup-message").fadeOut(), 3000);
+            }
+            
+            $("#setup-form").submit(function(e){
+                e.preventDefault();
+                if(!validateForm()) return;
+                $.ajax({
+                    url: "/setup",
+                    method: "POST",
+                    data: $(this).serialize(),
+                    success: function(response){
+                        showMessage(response.message, "success");
+                        setTimeout(() => window.location.href = "/", 2000);
+                    },
+                    error: function(error){
+                        showMessage(error.responseJSON?.message || "Error saving setup", "danger");
+                    }
+                });
+            });
+            
+            function validateForm(){
                 let isValid = true;
+                $(".bank-name, .account-name").removeClass("validation-error").next(".error-message").remove();
                 const bankNames = new Set();
-                
-                $(".bank-name").removeClass("validation-error").next(".error-message").remove();
-                $(".account-name").removeClass("validation-error").next(".error-message").remove();
-                
-                // Validate bank names
-                $(".bank-name").each(function() {
-                    const bankName = $(this).val().trim();
-                    if (bankNames.has(bankName)) {
-                        $(this).addClass("validation-error")
-                            .after('<div class="error-message">Duplicate bank name</div>');
+                $(".bank-name").each(function(){
+                    const name = $(this).val().trim();
+                    if(bankNames.has(name)){
+                        $(this).addClass("validation-error").after('<div class="error-message">Duplicate bank name</div>');
                         isValid = false;
                     }
-                    bankNames.add(bankName);
+                    bankNames.add(name);
                 });
-                
-                // Validate account names within each bank
-                $(".bank-block").each(function() {
-                    const accountNames = new Set();
-                    $(this).find(".account-name").each(function() {
-                        const accountName = $(this).val().trim();
-                        if (accountNames.has(accountName)) {
-                            $(this).addClass("validation-error")
-                                .after('<div class="error-message">Duplicate account name</div>');
-                            isValid = false;
-                        }
-                        accountNames.add(accountName);
-                    });
-                });
-                
                 return isValid;
             }
-
-            function showMessage(message, type) {
-                const messageDiv = $("#setup-message");
-                messageDiv.removeClass().addClass(`alert alert-${type}`).text(message).fadeIn();
-                setTimeout(() => messageDiv.fadeOut(), 3000);
-            }
-
-            // Initialize
-            updateBankTotals();
         });
     </script>
 </body>
