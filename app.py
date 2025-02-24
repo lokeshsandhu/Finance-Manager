@@ -31,9 +31,22 @@ def add_transaction():
 def view_transactions():
     try:
         transactions = sheet.get_all_records()
-        return jsonify({"transactions": transactions}), 200
+        formatted_transactions = []
+        for idx, t in enumerate(transactions):
+            formatted_transactions.append({
+                "id": idx + 1,  # Assigning a unique ID for frontend
+                "date": t.get("Date", ""),
+                "type": t.get("Type", ""),
+                "bank": t.get("Bank", ""),
+                "account": t.get("Account", ""),
+                "amount": t.get("Amount", ""),
+                "purpose": t.get("Purpose", ""),
+                "place": t.get("Place", "")
+            })
+        return jsonify({"transactions": formatted_transactions}), 200
     except Exception as e:
         return jsonify({"message": "Error fetching transactions", "error": str(e)}), 500
+
 
 @app.route("/delete_transaction", methods=["POST"])
 def delete_transaction():
