@@ -73,10 +73,6 @@
                             <span class="remove-account">&times;</span>
                             <div class="row">
                                 <div class="col-md-4">
-                                    <label class="form-label">Account Name</label>
-                                    <input type="text" class="form-control account-name" name="account_name_${bankIndex}[]" value="${acc.name}" required>
-                                </div>
-                                <div class="col-md-4">
                                     <label class="form-label">Account Type</label>
                                     <select class="form-control" name="account_type_${bankIndex}[]">
                                         <option value="Checking" ${acc.type === "Checking" ? "selected" : ""}>Checking</option>
@@ -97,10 +93,6 @@
                     <div class="account-row">
                         <span class="remove-account">&times;</span>
                         <div class="row">
-                            <div class="col-md-4">
-                                <label class="form-label">Account Name</label>
-                                <input type="text" class="form-control account-name" name="account_name_${bankIndex}[]" required>
-                            </div>
                             <div class="col-md-4">
                                 <label class="form-label">Account Type</label>
                                 <select class="form-control" name="account_type_${bankIndex}[]">
@@ -155,10 +147,6 @@
                     <div class="account-row">
                         <span class="remove-account">&times;</span>
                         <div class="row">
-                            <div class="col-md-4">
-                                <label class="form-label">Account Name</label>
-                                <input type="text" class="form-control account-name" name="account_name_${currentIndex}[]" required>
-                            </div>
                             <div class="col-md-4">
                                 <label class="form-label">Account Type</label>
                                 <select class="form-control" name="account_type_${currentIndex}[]">
