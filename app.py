@@ -34,7 +34,7 @@ def view_transactions():
         formatted_transactions = []
         for idx, t in enumerate(transactions):
             formatted_transactions.append({
-                "id": idx + 1,  # Assigning a unique ID for frontend
+                "id": idx + 1,
                 "date": t.get("Date", ""),
                 "type": t.get("Type", ""),
                 "bank": t.get("Bank", ""),
@@ -46,7 +46,6 @@ def view_transactions():
         return jsonify({"transactions": formatted_transactions}), 200
     except Exception as e:
         return jsonify({"message": "Error fetching transactions", "error": str(e)}), 500
-
 
 @app.route("/delete_transaction", methods=["POST"])
 def delete_transaction():
@@ -61,28 +60,11 @@ def delete_transaction():
 def edit_transaction():
     try:
         transaction_id = int(request.form["id"])
-        new_data = [
-            request.form["date"], request.form["type"], request.form["bank"], request.form["account"],
-            request.form["amount"], request.form["purpose"], request.form["place"]
-        ]
-        sheet.update(f"A{transaction_id + 1}:G{transaction_id + 1}", [new_data])
+        new_amount = request.form["amount"]
+        sheet.update_cell(transaction_id + 1, 5, new_amount)  # Amount is in column 5
         return jsonify({"message": "Transaction Edited Successfully!"}), 200
     except Exception as e:
         return jsonify({"message": "Error editing transaction", "error": str(e)}), 500
-
-@app.route("/refund_transaction", methods=["POST"])
-def refund_transaction():
-    try:
-        transaction_id = int(request.form["id"])
-        refund_amount = float(request.form["refund_amount"])
-        original_data = sheet.row_values(transaction_id + 1)
-        new_amount = float(original_data[4]) - refund_amount
-        refund_status = f"Partial Refund: {refund_amount}" if new_amount > 0 else "Full Refund"
-        sheet.update_cell(transaction_id + 1, 5, new_amount)
-        sheet.update_cell(transaction_id + 1, 8, refund_status)  # Assume column H is for refund status
-        return jsonify({"message": "Refund Processed Successfully!"}), 200
-    except Exception as e:
-        return jsonify({"message": "Error processing refund", "error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
