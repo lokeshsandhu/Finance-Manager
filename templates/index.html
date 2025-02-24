@@ -1,132 +1,221 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance Manager</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Finance Manager</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body class="bg-light">
-    <div class="container mt-5">
-        <h2 class="text-center mb-4">Finance Manager</h2>
-        
-        <div class="card p-4 shadow-sm">
-            <h4 class="mb-3">Add Transaction</h4>
-            <form id="transaction-form">
-                <div class="mb-3">
-                    <label class="form-label">Date</label>
-                    <input type="date" class="form-control" name="date" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Type</label>
-                    <select class="form-control" name="type" required>
-                        <option value="Online">Online</option>
-                        <option value="In-Person">In-Person</option>
-                        <option value="Interac">Interac</option>
-                        <option value="Cash">Cash</option>
-                        <option value="Across Accounts">Across Accounts</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Bank</label>
-                    <input type="text" class="form-control" name="bank">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Account</label>
-                    <input type="text" class="form-control" name="account">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Amount</label>
-                    <input type="number" class="form-control" name="amount" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Purpose</label>
-                    <input type="text" class="form-control" name="purpose" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Place</label>
-                    <input type="text" class="form-control" name="place" required>
-                </div>
-                <button type="submit" class="btn btn-primary w-100">Add Transaction</button>
-            </form>
-            <div id="response-message" class="mt-3 text-success" style="display: none;"></div>
-        </div>
+  <div class="container mt-5">
+    <h2 class="text-center mb-4">Finance Manager</h2>
 
-        <div class="card p-4 shadow-sm mt-4">
-            <h4 class="mb-3">View Transactions</h4>
-            <button class="btn btn-info w-100 mb-3" id="fetch-transactions">Load Transactions</button>
-            <div class="table-responsive">
-                <table class="table table-bordered table-striped">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th>Bank</th>
-                            <th>Account</th>
-                            <th>Amount</th>
-                            <th>Purpose</th>
-                            <th>Place</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="transactions-table"></tbody>
-                </table>
-            </div>
+    <!-- Add Transaction Card -->
+    <div class="card p-4 shadow-sm">
+      <h4 class="mb-3">Add Transaction</h4>
+      <form id="transaction-form">
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Date</label>
+            <input type="date" class="form-control" name="date" value="{{ default_date }}" required>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Type</label>
+            <select class="form-control" name="type" required>
+              <option value="Online">Online</option>
+              <option value="In-Person">In-Person</option>
+              <option value="Interac">Interac</option>
+              <option value="Cash">Cash</option>
+              <option value="Across Accounts">Across Accounts</option>
+            </select>
+          </div>
         </div>
+        <div class="row">
+          <!-- Dropdown for Bank -->
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Bank</label>
+            <select class="form-control" name="bank" required>
+              <option value="">Select Bank</option>
+              <option value="Bank A">Bank A</option>
+              <option value="Bank B">Bank B</option>
+              <option value="Bank C">Bank C</option>
+            </select>
+          </div>
+          <!-- Dropdown for Account -->
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Account</label>
+            <select class="form-control" name="account" required>
+              <option value="">Select Account</option>
+              <option value="Savings">Savings</option>
+              <option value="Checking">Checking</option>
+              <option value="Credit">Credit</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Amount</label>
+            <input type="number" class="form-control" name="amount" required>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Purpose</label>
+            <input type="text" class="form-control" name="purpose" required>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Place</label>
+            <input type="text" class="form-control" name="place" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Add Transaction</button>
+      </form>
+      <div id="response-message" class="mt-3 text-success" style="display: none;"></div>
     </div>
-    
-    <script>
-        $(document).ready(function () {
-            function fetchTransactions() {
-                $.get("/view_transactions", function (data) {
-                    let rows = "";
-                    data.transactions.forEach(function (transaction) {
-                        rows += `<tr>
-                                    <td>${transaction.id}</td>
-                                    <td>${transaction.date}</td>
-                                    <td>${transaction.type}</td>
-                                    <td>${transaction.bank}</td>
-                                    <td>${transaction.account}</td>
-                                    <td>${transaction.amount}</td>
-                                    <td>${transaction.purpose}</td>
-                                    <td>${transaction.place}</td>
-                                    <td>
-                                        <button class='btn btn-warning btn-sm edit-transaction' data-id='${transaction.id}'>Edit</button>
-                                        <button class='btn btn-danger btn-sm delete-transaction' data-id='${transaction.id}'>Delete</button>
-                                    </td>
-                                </tr>`;
-                    });
-                    $("#transactions-table").html(rows);
-                });
-            }
 
-            $("#fetch-transactions").click(fetchTransactions);
+    <!-- Search & Filter Section -->
+    <div class="card p-4 shadow-sm mt-4">
+      <h4 class="mb-3">Search & Filters</h4>
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <input type="text" id="keyword" class="form-control" placeholder="Keyword">
+        </div>
+        <div class="col-md-4 mb-3">
+          <input type="date" id="filter-date" class="form-control">
+        </div>
+        <div class="col-md-4 mb-3">
+          <select id="filter-bank" class="form-control">
+            <option value="">Select Bank</option>
+            <option value="Bank A">Bank A</option>
+            <option value="Bank B">Bank B</option>
+            <option value="Bank C">Bank C</option>
+          </select>
+        </div>
+      </div>
+      <button id="search-btn" class="btn btn-secondary w-100">Search Transactions</button>
+    </div>
 
-            $(document).on("click", ".delete-transaction", function () {
-                let transactionId = $(this).data("id");
-                $.post("/delete_transaction", { id: transactionId }, function (response) {
-                    alert(response.message);
-                    fetchTransactions();
-                }).fail(function () {
-                    alert("Error deleting transaction.");
-                });
-            });
+    <!-- View Transactions Card -->
+    <div class="card p-4 shadow-sm mt-4">
+      <h4 class="mb-3">View Transactions</h4>
+      <button class="btn btn-info w-100 mb-3" id="fetch-transactions">Load Transactions</button>
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Bank</th>
+              <th>Account</th>
+              <th>Amount</th>
+              <th>Purpose</th>
+              <th>Place</th>
+              <th>Refund Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="transactions-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
-            $(document).on("click", ".edit-transaction", function () {
-                let transactionId = $(this).data("id");
-                let newAmount = prompt("Enter new amount:");
-                if (newAmount !== null) {
-                    $.post("/edit_transaction", { id: transactionId, amount: newAmount }, function (response) {
-                        alert(response.message);
-                        fetchTransactions();
-                    }).fail(function () {
-                        alert("Error editing transaction.");
-                    });
-                }
-            });
+  <script>
+    $(document).ready(function () {
+      function fetchTransactions(url = "/view_transactions") {
+        $.get(url, function (data) {
+          let rows = "";
+          data.transactions.forEach(function (transaction) {
+            rows += `<tr>
+                      <td>${transaction.id}</td>
+                      <td>${transaction.date}</td>
+                      <td>${transaction.type}</td>
+                      <td>${transaction.bank}</td>
+                      <td>${transaction.account}</td>
+                      <td>${transaction.amount}</td>
+                      <td>${transaction.purpose}</td>
+                      <td>${transaction.place}</td>
+                      <td>${transaction.refund_status || ""}</td>
+                      <td>
+                        <button class='btn btn-warning btn-sm edit-transaction' data-id='${transaction.id}'>Edit</button>
+                        <button class='btn btn-danger btn-sm delete-transaction' data-id='${transaction.id}'>Delete</button>
+                        <button class='btn btn-success btn-sm refund-transaction' data-id='${transaction.id}'>Refund</button>
+                      </td>
+                    </tr>`;
+          });
+          $("#transactions-table").html(rows);
         });
-    </script>
+      }
+
+      $("#fetch-transactions").click(fetchTransactions);
+
+      // Add Transaction
+      $("#transaction-form").on("submit", function (e) {
+        e.preventDefault();
+        $.post("/add_transaction", $(this).serialize(), function (response) {
+          $("#response-message").text(response.message).fadeIn().delay(2000).fadeOut();
+          fetchTransactions();
+        }).fail(function () {
+          alert("Error adding transaction.");
+        });
+      });
+
+      // Delete Transaction
+      $(document).on("click", ".delete-transaction", function () {
+        let transactionId = $(this).data("id");
+        $.post("/delete_transaction", { id: transactionId }, function (response) {
+          alert(response.message);
+          fetchTransactions();
+        }).fail(function () {
+          alert("Error deleting transaction.");
+        });
+      });
+
+      // Edit Transaction (all fields)
+      $(document).on("click", ".edit-transaction", function () {
+        let transactionId = $(this).data("id");
+        // Gather new values (in a real app, you might display a modal form pre-populated with current data)
+        let newData = {
+          id: transactionId,
+          date: prompt("Enter new date (YYYY-MM-DD):"),
+          type: prompt("Enter new type:"),
+          bank: prompt("Enter new bank:"),
+          account: prompt("Enter new account:"),
+          amount: prompt("Enter new amount:"),
+          purpose: prompt("Enter new purpose:"),
+          place: prompt("Enter new place:")
+        };
+        $.post("/edit_transaction", newData, function (response) {
+          alert(response.message);
+          fetchTransactions();
+        }).fail(function () {
+          alert("Error editing transaction.");
+        });
+      });
+
+      // Refund Transaction
+      $(document).on("click", ".refund-transaction", function () {
+        let transactionId = $(this).data("id");
+        let refundType = prompt("Enter refund type (full/partial):", "full");
+        let refundAmount = refundType === "partial" ? prompt("Enter refund amount:") : "";
+        $.post("/refund_transaction", { id: transactionId, refund_type: refundType, refund_amount: refundAmount }, function (response) {
+          alert(response.message);
+          fetchTransactions();
+        }).fail(function () {
+          alert("Error processing refund.");
+        });
+      });
+
+      // Search & Filters
+      $("#search-btn").click(function () {
+        let keyword = $("#keyword").val();
+        let date = $("#filter-date").val();
+        let bank = $("#filter-bank").val();
+        // Construct query parameters
+        let query = `?keyword=${keyword}&date=${date}&bank=${bank}`;
+        fetchTransactions("/search_transactions" + query);
+      });
+    });
+  </script>
 </body>
 </html>
