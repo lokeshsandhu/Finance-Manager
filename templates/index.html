@@ -7,7 +7,7 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body class="bg-light">
-  <!-- Navigation Bar -->
+  <!-- Navigation -->
   <nav class="navbar navbar-light bg-light mb-3">
     <div class="container-fluid">
       <a class="navbar-brand" href="/">Finance Manager</a>
@@ -103,7 +103,7 @@
     // Set default date to today.
     $("#date-field").val(new Date().toISOString().slice(0,10));
 
-    // When a bank is selected, populate the Account dropdown.
+    // Populate Account dropdown when Bank is selected.
     const bankAccounts = {{ banks | tojson }};
     $("#bank-select").change(function(){
       const selectedBank = $(this).val();
@@ -115,7 +115,7 @@
       }
     });
 
-    // Fetch transactions and display in table.
+    // Fetch transactions from backend.
     function fetchTransactions(){
       $.get("/view_transactions", function(data){
         let rows = "";
